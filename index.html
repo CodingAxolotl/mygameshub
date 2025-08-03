@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Games Hub</title>
+    <!-- Use Tailwind CSS for a clean, responsive design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar styling for the main content area */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        body::-webkit-scrollbar-track {
+            background: #111827; /* dark bg */
+        }
+
+        body::-webkit-scrollbar-thumb {
+            background: #4B5563; /* grey thumb */
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans flex flex-col min-h-screen">
+
+    <!-- Header bar at the top -->
+    <header class="sticky top-0 bg-gray-800 p-4 shadow-lg z-10">
+        <div class="container mx-auto flex justify-between items-center px-4">
+            <!-- Website Title -->
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-indigo-400">My Games Hub</h1>
+            
+            <!-- Update Info Panels, now vertically stacked -->
+            <div class="flex flex-col gap-2 items-end">
+                <!-- Previous Update Info -->
+                <div class="bg-gray-700 text-gray-300 text-sm md:text-base font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                    Previous update: <span class="text-white">Added Axolotl Bird on August 3rd!</span>
+                </div>
+                <!-- Next Update Info -->
+                <div class="bg-gray-700 text-gray-300 text-sm md:text-base font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                    Next update: <span class="text-white">New Game on August 20th!</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content area -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="container mx-auto">
+            <!-- Heading for the games section -->
+            <h2 class="text-3xl md:text-4xl font-extrabold text-center mb-8 tracking-wide">Explore My Games</h2>
+
+            <!-- The vertically scrolling container for the games arranged in pairs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 overflow-y-auto">
+                
+                <!-- Game 1 Card: Axolotl Clicker -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-pink-500 to-purple-600 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">💖</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Axolotl Clicker</h3>
+                        <p class="text-gray-400 text-sm mb-4">A fun axolotl-styled clicker game with lots of upgrades and an axolotl to click on to.</p>
+                        <!-- Updated to a direct link to the external website -->
+                        <a href="https://axolotlclicker.vercel.app" target="_blank" rel="noopener noreferrer" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Play Now</a>
+                    </div>
+                </div>
+
+                <!-- Game 2 Card: Axolotl Merge -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">🔀</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Axolotl Merge</h3>
+                        <p class="text-gray-400 text-sm mb-4">A fun axolotl-styled merge game in which you merge them (1+1=2 2+2=3) and get new ones. Buy ingots, expand grid buy auto merge... And more!</p>
+                        <a href="https://axolotlmerge.vercel.app" target="_blank" rel="noopener noreferrer" class="inline-block bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Play Now</a>
+                    </div>
+                </div>
+
+                <!-- Game 3 Card: Cash Hunt -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-green-400 to-yellow-500 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">💰</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Cash Hunt</h3>
+                        <p class="text-gray-400 text-sm mb-4">An extraordinary money game in which you need to survive. You need to work, spend some money on the food, drinks and energy bars. You can also gather the money and invest it! If you put your money in the bank it will give you 1% of your money in the bank per minute.</p>
+                        <!-- Updated to a direct link to the external website -->
+                        <a href="https://cashhunt.vercel.app" target="_blank" rel="noopener noreferrer" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Play Now</a>
+                    </div>
+                </div>
+                
+                <!-- New Game Card: Axolotl Bird -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-sky-300 to-blue-500 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">🐦</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Axolotl Bird</h3>
+                        <p class="text-gray-400 text-sm mb-4">A super-fun flying game in which you need to click on the screen and the Axolotl Bird will go up. The goal is to slide on lines and get as much points as possible! Test the clouds out for yourself!</p>
+                        <a href="https://axolotlbird.vercel.app" target="_blank" rel="noopener noreferrer" class="inline-block bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Play Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Simple footer -->
+    <footer class="bg-gray-800 p-4 text-center text-gray-500 text-sm mt-auto">
+        &copy; 2025 My Games Hub. All rights reserved.
+    </footer>
+
+</body>
+</html>
