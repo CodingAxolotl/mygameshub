@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        body::-webkit-scrollbar-track {
+            background: #111827;
+        }
+
+        body::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 10px;
+        }
+
+        .colourful-mode {
+            background: linear-gradient(135deg, #FF5733, #FFBD33, #75FF33, #33FFBD, #3361FF, #7533FF, #FF33F5, #FF336B);
+            background-size: 400% 400%;
+            animation: gradient-animation 30s ease infinite;
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            25% { background-position: 50% 100%; }
+            50% { background-position: 100% 50%; }
+            75% { background-position: 50% 0%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .fade-in-slow {
+            opacity: 0;
+            animation: fadeIn 2s ease-in-out forwards;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .star-button, .play-next-button {
+            position: absolute;
+            top: 1rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: transform 0.2s ease-in-out;
+            z-index: 10;
+        }
+
+        .star-button {
+            right: 1rem;
+        }
+
+        .play-next-button {
+            right: 3.5rem;
+        }
+
+        .star-button:hover, .play-next-button:hover {
+            transform: scale(1.2);
+        }
+
+        .starred {
+            color: yellow;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+        .modal-content {
+            background-color: #1F2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 90%;
+            width: 400px;
+        }
+        
+        .dashboard-list-item {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .dashboard-list-item:hover {
+            color: #d1d5db;
+            text-decoration: line-through;
+        }
+        
+        .settings-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #1F2937;
+            padding: 2rem;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+            box-shadow: -10px 0 25px rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .settings-sidebar.open {
+            transform: translateX(0);
+        }
+
+        #notes-textarea {
+            min-height: 12rem;
+        }
+
+        .dashboard-panel-item {
+            transition: transform 0.2s, border 0.2s;
+        }
+
+        .dashboard-panel-item.customizing {
+            cursor: grab;
+            border: 2px dashed #6366f1;
+        }
+
+        .dashboard-panel-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .dashboard-panel-item.drag-over {
+            transform: scale(1.05);
+            background-color: #374151;
+        }
+        
+        .toggle-container {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-container input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .locked-feature {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
+    </style>
+<script src="https://cloud.umami.is/script.js" data-website-id="f37b7004-2951-41d6-9d29-6d48cdb82546"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans flex flex-col min-h-screen">
+
+    <div id="permission-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Save your preferences?</h3>
+            <p class="mb-6 text-gray-300">
+                This website would like to use local storage to save your preferred game order, notes, and other preferences.
+                Do you allow this?
+            </p>
+            <div class="flex justify-center gap-4">
+                <button id="permission-yes" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Yes</button>
+                <button id="permission-no" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">No</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="message-modal-title" class="text-2xl font-bold mb-4"></h3>
+            <p id="message-modal-body" class="mb-6 text-gray-300"></p>
+            <button id="message-modal-close" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">OK</button>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal hidden">
+        <div id="confirmation-content" class="modal-content">
+        </div>
+    </div>
+
+    <div id="settings-sidebar" class="settings-sidebar">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Settings</h2>
+            <button id="close-settings" class="text-gray-400 hover:text-white text-3xl font-light">&times;</button>
+        </div>
+        
+        <p class="bg-gray-700 p-3 rounded-lg text-gray-300 mb-6 text-sm italic">
+            Thanks to my friend I got the idea to make the axolotl games.
+        </p>
+        
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-xl font-semibold mb-2">How to Play</h3>
+                <p class="text-gray-400 text-sm mb-4">
+                    Welcome to the Games Hub! Here’s a quick guide to all the features:
+                </p>
+                <ul class="list-disc pl-5 space-y-2 text-gray-400 text-sm">
+                    <li>
+                        <strong>Dashboard:</strong> Your main panel to keep track of your notes, game lists, and usage stats.
+                    </li>
+                    <li>
+                        <strong>Customise Dashboard:</strong> Click this button to drag and drop the panels in any order you like. Your preference will be saved.
+                    </li>
+                    <li>
+                        <strong>Starred Games:</strong> Click the '⭐' button on any game to add it to your starred list. This will also move the game to the top of your game list on the main page.
+                    </li>
+                    <li>
+                        <strong>Play Next List:</strong> Click the '🕒' button to add a game to a queue. Click an item on the list to remove it.
+                    </li>
+                    <li>
+                        <strong>Notes:</strong> A private space to save your thoughts. Note the character limit!
+                    </li>
+                    <li>
+                        <strong>Usage Limits:</strong> Keep an eye on how many games you've opened this month and when your limits will reset.
+                    </li>
+                    <li>
+                        <strong>Colour Mode:</strong> Use the toggle switch below to enable a vibrant, colourful background for the website.
+                    </li>
+                    <li>
+                        <strong>Hub Opens:</strong> This tracks how many times you've opened the Games Hub website this month. You have a limit of 100 opens per month. Once this limit is reached, the hub will be locked until the next monthly reset.
+                    </li>
+                </ul>
+            </div>
+        
+            <div id="colour-mode-section">
+                <h3 class="text-xl font-semibold mb-2">Colour Mode</h3>
+                <div class="flex items-center justify-between bg-gray-700 p-4 rounded-lg shadow-inner">
+                    <span class="text-gray-300 font-semibold">Enable Colourful Background</span>
+                    <label class="toggle-container">
+                        <input type="checkbox" id="colour-mode-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold mb-2">Hub Rules and Data</h3>
+                <p class="text-gray-400 text-sm mb-4">
+                    When you allow local storage, the following data is saved directly on your device:
+                    <ul class="list-disc pl-5 mt-2 space-y-1">
+                        <li>Starred Games and "Play Next" lists</li>
+                        <li>Dashboard panel order</li>
+                        <li>Your personal notes</li>
+                        <li>Your usage limits, including Games Hub opens.</li>
+                    </ul>
+                    This data is not sent to any server. If you do not allow local storage, these features are disabled.
+                </p>
+                <h4 class="text-lg font-semibold mt-4 mb-2">Rules of Conduct</h4>
+                <p class="text-gray-400 text-sm mb-4">
+                    Breaking any of the rules below will result in your progress being deleted.
+                </p>
+                <ul class="list-disc pl-5 space-y-1 text-gray-400 text-sm">
+                    <li>The usage of any extensions or userscripts is forbidden.</li>
+                    <li>The usage of Developer Tools is strictly forbidden.</li>
+                    <li>Writing anything inappropriate in the "My Notes" section is strictly forbidden.</li>
+                    <li>Copying this website is also strictly forbidden.</li>
+                </ul>
+            </div>
+
+            <div id="change-mind-section" class="hidden">
+                <h3 class="text-xl font-semibold mb-2">Local Storage Permission</h3>
+                <p class="text-gray-400 text-sm mb-2">Toggle whether the site can save your progress.</p>
+                <div class="flex items-center justify-between">
+                    <span id="permission-status" class="text-lg font-medium">Now: No</span>
+                    <button id="change-mind-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200">Change My Mind</button>
+                </div>
+            </div>
+            
+            <div id="delete-progress-section" class="hidden">
+                <h3 class="text-xl font-semibold mb-2">Delete Progress</h3>
+                <p class="text-gray-400 text-sm mb-2">This will permanently erase all saved data on this device.</p>
+                <button id="delete-progress-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200">Delete My Progress</button>
+            </div>
+        </div>
+    </div>
+
+
+    <header class="sticky top-0 bg-gray-800 p-4 shadow-lg z-10">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4 px-4">
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-indigo-400 text-center md:text-left">Games Hub</h1>
+            
+            <div class="flex flex-col md:flex-row gap-4 items-center md:items-end">
+                <div class="flex flex-col gap-2 items-center md:items-end">
+                    <div class="bg-gray-700 text-gray-300 text-sm md:text-base font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                        Previous update: <span class="text-white">Added game opinions on August 4th!</span>
+                    </div>
+                    <div class="bg-gray-700 text-gray-300 text-sm md:text-base font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                        Next update: <span class="text-white">New Game on August 20th!</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute top-4 right-4 flex items-center gap-4 md:relative md:top-auto md:right-auto">
+                <a href="https://forms.gle/opJTcwba3iY4Hkrq8" target="_blank" rel="noopener noreferrer" class="opinion-link inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200 text-center text-sm whitespace-nowrap">Your Opinion About This Website</a>
+                <button id="global-settings-btn" class="text-white text-2xl hover:text-indigo-400 transition-colors duration-200">
+                    ⚙️
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="container mx-auto">
+            
+            <div id="dashboard-panel" class="bg-gray-800 rounded-2xl shadow-xl p-6 mb-8 fade-in-slow">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl md:text-4xl font-extrabold tracking-wide">My Dashboard</h2>
+                </div>
+                <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                    
+                    <div id="notes-panel" class="bg-gray-700 p-4 rounded-lg shadow-md col-span-1 lg:col-span-2 dashboard-panel-item">
+                        <h3 class="text-xl font-semibold mb-2">My Notes</h3>
+                        <textarea id="notes-textarea" class="w-full h-auto p-2 bg-gray-900 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 overflow-hidden resize-none"></textarea>
+                    </div>
+
+                    <div id="usage-panel" class="bg-gray-700 p-4 rounded-lg shadow-md dashboard-panel-item">
+                        <h3 class="text-xl font-semibold mb-2">Usage Limits</h3>
+                        <ul class="space-y-2 text-gray-300">
+                            <li>Notes: <span id="notes-usage">0</span> / 1000 characters</li>
+                            <li>Opened games: <span id="games-usage">0</span> / 100</li>
+                            <li>Hub opens: <span id="hub-usage">0</span> / 100</li>
+                        </ul>
+                        <p class="text-gray-400 text-sm mt-4">
+                            (If you want to avoid the 100 opens per month limit dont close the tab of the game.)
+                        </p>
+                        <div class="mt-4 p-2 bg-gray-800 rounded-lg text-sm text-center">
+                            Time until reset: <br><span id="reset-countdown" class="font-bold text-lg text-yellow-400">0d 0h</span>
+                        </div>
+                    </div>
+                    
+                    <div id="starred-panel" class="bg-gray-700 p-4 rounded-lg shadow-md dashboard-panel-item">
+                        <h3 class="text-xl font-semibold mb-2">Starred Games</h3>
+                        <ul id="starred-games-list" class="list-disc pl-5 space-y-1 text-gray-300">
+                        </ul>
+                    </div>
+                    <div id="play-next-panel" class="bg-gray-700 p-4 rounded-lg shadow-md dashboard-panel-item">
+                        <h3 class="text-xl font-semibold mb-2">Play Next List</h3>
+                        <ul id="play-next-list" class="list-decimal pl-5 space-y-1 text-gray-300">
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center gap-4">
+                    <button id="customize-dashboard-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center text-sm">
+                        Customise Dashboard
+                    </button>
+                    <button id="end-customizing-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center text-sm hidden">
+                        End Customising
+                    </button>
+                </div>
+            </div>
+            
+            <h2 class="text-3xl md:text-4xl font-extrabold text-center mb-8 tracking-wide">Explore My Games</h2>
+
+            <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 overflow-y-auto fade-in-slow">
+                
+                <div id="game-card-1" class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
+                    <span class="star-button" data-game-id="game-card-1" data-game-emoji="💖" data-game-name="Axolotl Clicker">☆</span>
+                    <span class="play-next-button" data-game-id="game-card-1" data-game-emoji="💖" data-game-name="Axolotl Clicker">🕒</span>
+                    <div class="h-48 bg-gradient-to-br from-pink-500 to-purple-600 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">💖</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Axolotl Clicker</h3>
+                        <p class="text-gray-400 text-sm mb-4">A fun axolotl-styled clicker game with lots of upgrades and an axolotl to click on to.</p>
+                        <div class="flex flex-col gap-2">
+                            <a href="https://axolotlclicker.vercel.app" target="_blank" rel="noopener noreferrer" class="play-now-btn inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Play Now</a>
+                            <a href="https://forms.gle/nVQTJaJBRXMM3ZKN7" target="_blank" rel="noopener noreferrer" class="opinion-link inline-block bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Your Opinion About This Game</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="game-card-2" class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
+                    <span class="star-button" data-game-id="game-card-2" data-game-emoji="🔀" data-game-name="Axolotl Merge">☆</span>
+                    <span class="play-next-button" data-game-id="game-card-2" data-game-emoji="🔀" data-game-name="Axolotl Merge">🕒</span>
+                    <div class="h-48 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">🔀</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Axolotl Merge</h3>
+                        <p class="text-gray-400 text-sm mb-4">A fun axolotl-styled merge game in which you merge them (1+1=2 2+2=3) and get new ones. Buy ingots, expand grid, buy auto merge... And more!</p>
+                        <div class="flex flex-col gap-2">
+                            <a href="https://axolotlmerge.vercel.app" target="_blank" rel="noopener noreferrer" class="play-now-btn inline-block bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Play Now</a>
+                            <a href="https://forms.gle/8LEDX8pkp1BZKeBB7" target="_blank" rel="noopener noreferrer" class="opinion-link inline-block bg-teal-700 hover:bg-teal-800 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Your Opinion About This Game</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="game-card-3" class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
+                    <span class="star-button" data-game-id="game-card-3" data-game-emoji="💰" data-game-name="Cash Hunt">☆</span>
+                    <span class="play-next-button" data-game-id="game-card-3" data-game-emoji="💰" data-game-name="Cash Hunt">🕒</span>
+                    <div class="h-48 bg-gradient-to-br from-green-400 to-yellow-500 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">💰</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Cash Hunt</h3>
+                        <p class="text-gray-400 text-sm mb-4">An extraordinary money game in which you need to survive. You need to work, spend some money on the food, drinks and energy bars. You can also gather the money and invest it! If you put your money in the bank it will give you 1% of your money in the bank per minute.</p>
+                        <div class="flex flex-col gap-2">
+                            <a href="https://cashhunt.vercel.app" target="_blank" rel="noopener noreferrer" class="play-now-btn inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Play Now</a>
+                            <a href="https://forms.gle/mLSCbQqeBiF7wJyCA" target="_blank" rel="noopener noreferrer" class="opinion-link inline-block bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Your Opinion About This Game</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="game-card-4" class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
+                    <span class="star-button" data-game-id="game-card-4" data-game-emoji="🐦" data-game-name="Axolotl Bird">☆</span>
+                    <span class="play-next-button" data-game-id="game-card-4" data-game-emoji="🐦" data-game-name="Axolotl Bird">🕒</span>
+                    <div class="h-48 bg-gradient-to-br from-sky-300 to-blue-500 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">🐦</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Axolotl Bird</h3>
+                        <p class="text-gray-400 text-sm mb-4">A super-fun flying game in which you need to click on the screen and the Axolotl Bird will go up. The goal is to go between pillars and not crash into them! And of course get as much points as possible! There are mysterious clouds floating...</p>
+                        <div class="flex flex-col gap-2">
+                            <a href="https://axolotlbird.vercel.app" target="_blank" rel="noopener noreferrer" class="play-now-btn inline-block bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Play Now</a>
+                            <a href="https://forms.gle/2gRfA7t1pSEba1Px5" target="_blank" rel="noopener noreferrer" class="opinion-link inline-block bg-sky-700 hover:bg-sky-800 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center">Your Opinion About This Game</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="game-card-5" class="bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
+                    <span class="star-button" data-game-id="game-card-5" data-game-emoji="🧱" data-game-name="Axolotl Build">☆</span>
+                    <span class="play-next-button" data-game-id="game-card-5" data-game-emoji="🧱" data-game-name="Axolotl Build">🕒</span>
+                    <div class="h-48 bg-gradient-to-br from-orange-400 to-red-500 rounded-t-2xl flex items-center justify-center">
+                        <span class="text-5xl font-black">🧱</span>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold mb-2">Axolotl Build</h3>
+                        <p class="text-gray-400 text-sm mb-4">A fun block game in which there is a grid and the player can put blocks of different colours into it! Expand grid, build, and more!</p>
+                        <div class="flex flex-col gap-2">
+                            <a href="#" target="_blank" rel="noopener noreferrer" class="play-now-btn inline-block bg-gray-500 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center pointer-events-none">Will be added later</a>
+                            <a href="#" target="_blank" rel="noopener noreferrer" class="opinion-link inline-block bg-gray-700 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 text-center pointer-events-none">Will be added later</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 p-4 text-center text-gray-500 text-sm mt-auto">
+        &copy; 2025 Games Hub. All rights reserved.
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gamesContainer = document.getElementById('games-container');
+            const starButtons = document.querySelectorAll('.star-button');
+            const playNextButtons = document.querySelectorAll('.play-next-button');
+            const permissionModal = document.getElementById('permission-modal');
+            const permissionYesBtn = document.getElementById('permission-yes');
+            const permissionNoBtn = document.getElementById('permission-no');
+            const dashboardPanel = document.getElementById('dashboard-panel');
+            const dashboardGrid = document.getElementById('dashboard-grid');
+            const notesTextarea = document.getElementById('notes-textarea');
+            const starredGamesList = document.getElementById('starred-games-list');
+            const playNextList = document.getElementById('play-next-list');
+            const playNowButtons = document.querySelectorAll('.play-now-btn');
+            const opinionLinks = document.querySelectorAll('.opinion-link');
+
+            const notesUsageSpan = document.getElementById('notes-usage');
+            const gamesUsageSpan = document.getElementById('games-usage');
+            const hubUsageSpan = document.getElementById('hub-usage');
+            const resetCountdownSpan = document.getElementById('reset-countdown');
+            const customizeDashboardBtn = document.getElementById('customize-dashboard-btn');
+            const endCustomizingBtn = document.getElementById('end-customizing-btn');
+
+            const globalSettingsBtn = document.getElementById('global-settings-btn');
+            const settingsSidebar = document.getElementById('settings-sidebar');
+            const closeSettingsBtn = document.getElementById('close-settings');
+            const changeMindSection = document.getElementById('change-mind-section');
+            const changeMindBtn = document.getElementById('change-mind-btn');
+            const deleteProgressSection = document.getElementById('delete-progress-section');
+            const deleteProgressBtn = document.getElementById('delete-progress-btn');
+            const permissionStatusSpan = document.getElementById('permission-status');
+            
+            const colourModeToggle = document.getElementById('colour-mode-toggle');
+            const body = document.body;
+
+            const confirmationModal = document.getElementById('confirmation-modal');
+            const confirmationContent = document.getElementById('confirmation-content');
+
+            const messageModal = document.getElementById('message-modal');
+            const messageModalTitle = document.getElementById('message-modal-title');
+            const messageModalBody = document.getElementById('message-modal-body');
+            const messageModalCloseBtn = document.getElementById('message-modal-close');
+
+            const initialGameCards = Array.from(gamesContainer.children);
+            const dashboardPanels = document.querySelectorAll('.dashboard-panel-item');
+
+            let canUseLocalStorage = false;
+            let starredGames = [];
+            let playNextGames = [];
+            let gamesOpenedCount = 0;
+            let hubOpenedCount = 0;
+            const HUB_OPEN_LIMIT = 100;
+            const GAMES_OPEN_LIMIT = 100;
+            const RESET_PERIOD_DAYS = 31;
+            let resetDate = null;
+            let firstPlayDate = null;
+            let draggedItem = null;
+            let isCustomizing = false;
+
+            const NOTES_CHAR_LIMIT = 1000;
+            
+            const FORBIDDEN_WORDS = ['asshole', 'bastard', 'bitch', 'bullshit', 'cunt', 'damn', 'fuck', 'shit', 'wank'];
+
+            const showMessageModal = (title, body, persistent = false) => {
+                messageModalTitle.textContent = title;
+                messageModalBody.textContent = body;
+                messageModal.classList.remove('hidden');
+                if (!persistent) {
+                    clearTimeout(messageModal.hideTimeout);
+                    messageModal.hideTimeout = setTimeout(() => {
+                        messageModal.classList.add('hidden');
+                    }, 3000);
+                }
+            };
+            
+            const autoResizeTextarea = () => {
+                notesTextarea.style.height = 'auto';
+                notesTextarea.style.height = notesTextarea.scrollHeight + 'px';
+            };
+            
+            const deleteProgressPermanently = (message = '') => {
+                localStorage.removeItem('gamesHubPermission');
+                localStorage.removeItem('gamesHubOrder');
+                localStorage.removeItem('gamesHubDashboardOrder');
+                localStorage.removeItem('gamesHubNotes');
+                localStorage.removeItem('gamesHubStarred');
+                localStorage.removeItem('gamesHubPlayNext');
+                localStorage.removeItem('gamesHubGamesOpened');
+                localStorage.removeItem('gamesHubHubOpened');
+                localStorage.removeItem('gamesHubImages');
+                localStorage.removeItem('gamesHubFirstPlayDate');
+                localStorage.removeItem('gamesHubResetDate');
+                localStorage.removeItem('gamesHubColourModeEnabled');
+                
+                if (message) {
+                    localStorage.setItem('progressDeletedMessage', message);
+                }
+                
+                window.location.reload();
+            };
+
+            const saveState = () => {
+                if (canUseLocalStorage) {
+                    const gameCards = Array.from(gamesContainer.children);
+                    const gameOrder = gameCards.map(card => card.id);
+                    localStorage.setItem('gamesHubOrder', JSON.stringify(gameOrder));
+
+                    const dashboardOrder = Array.from(dashboardGrid.children).map(panel => panel.id);
+                    localStorage.setItem('gamesHubDashboardOrder', JSON.stringify(dashboardOrder));
+                    
+                    localStorage.setItem('gamesHubNotes', notesTextarea.value);
+                    localStorage.setItem('gamesHubStarred', JSON.stringify(starredGames));
+                    localStorage.setItem('gamesHubPlayNext', JSON.stringify(playNextGames));
+                    localStorage.setItem('gamesHubGamesOpened', gamesOpenedCount);
+                    localStorage.setItem('gamesHubHubOpened', hubOpenedCount);
+                    localStorage.setItem('gamesHubResetDate', resetDate.toISOString());
+                    localStorage.setItem('gamesHubFirstPlayDate', firstPlayDate.toISOString());
+                    localStorage.setItem('gamesHubColourModeEnabled', colourModeToggle.checked);
+                }
+            };
+            
+            const updateUsageDisplay = () => {
+                notesUsageSpan.textContent = canUseLocalStorage ? notesTextarea.value.length : 'N/A';
+                gamesUsageSpan.textContent = canUseLocalStorage ? gamesOpenedCount : 'N/A';
+                hubUsageSpan.textContent = canUseLocalStorage ? hubOpenedCount : 'N/A';
+            };
+
+            const applyLockdown = () => {
+                const isLocked = canUseLocalStorage && hubOpenedCount > HUB_OPEN_LIMIT;
+
+                [customizeDashboardBtn, endCustomizingBtn, globalSettingsBtn, changeMindBtn, deleteProgressBtn, colourModeToggle].forEach(btn => {
+                    btn.disabled = isLocked;
+                    btn.classList.toggle('locked-feature', isLocked);
+                });
+                notesTextarea.disabled = isLocked;
+                notesTextarea.placeholder = isLocked ? 'Hub limit reached. Notes disabled.' : '';
+                notesTextarea.classList.toggle('locked-feature', isLocked);
+
+                document.querySelectorAll('.star-button, .play-next-button').forEach(el => {
+                    el.classList.toggle('locked-feature', isLocked);
+                });
+
+                document.querySelectorAll('.play-now-btn, .opinion-link').forEach(link => {
+                    // Only apply locked-feature class and disable if it's NOT the Axolotl Build game's placeholder links
+                    const isAxolotlBuildPlaceholder = link.closest('#game-card-5') && link.getAttribute('href') === '#';
+                    
+                    if (isLocked || isAxolotlBuildPlaceholder) {
+                        link.classList.add('locked-feature');
+                        if (!link.dataset.originalHref) {
+                            link.dataset.originalHref = link.href;
+                        }
+                        link.removeAttribute('href');
+                    } else {
+                        link.classList.remove('locked-feature');
+                        if (link.dataset.originalHref) {
+                            link.href = link.dataset.originalHref;
+                            delete link.dataset.originalHref;
+                        }
+                    }
+                });
+
+                if (isLocked) {
+                    showMessageModal('Games Hub Locked', `You have reached your monthly limit of ${HUB_OPEN_LIMIT} Games Hub opens. The hub is locked until the next monthly reset.`, true);
+                } else {
+                    if (messageModalTitle.textContent === 'Games Hub Locked') {
+                        messageModal.classList.add('hidden');
+                        clearTimeout(messageModal.hideTimeout);
+                    }
+                }
+            };
+
+            const updateCountdown = () => {
+                if (!canUseLocalStorage || !resetDate) {
+                    resetCountdownSpan.textContent = 'N/A';
+                    return;
+                }
+                
+                const now = new Date();
+                const timeLeft = resetDate - now;
+
+                if (timeLeft <= 0) {
+                    notesTextarea.value = '';
+                    gamesOpenedCount = 0;
+                    hubOpenedCount = 0;
+                    localStorage.removeItem('gamesHubNotes');
+                    localStorage.removeItem('gamesHubGamesOpened');
+                    localStorage.removeItem('gamesHubHubOpened');
+                    firstPlayDate = now;
+                    resetDate = new Date(now.getTime() + RESET_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+                    localStorage.setItem('gamesHubFirstPlayDate', firstPlayDate.toISOString());
+                    localStorage.setItem('gamesHubResetDate', resetDate.toISOString());
+                    loadState();
+                    showMessageModal('Limits Reset', 'Your monthly usage limits have been reset!');
+                    return;
+                }
+
+                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                
+                resetCountdownSpan.textContent = `${days}d ${hours}h`;
+            };
+
+            const renderGameList = () => {
+                const starredIds = new Set(starredGames.map(game => game.id));
+                
+                const reorderedGames = [];
+                const unstarredInOriginalOrder = [];
+                const starredCards = [];
+
+                initialGameCards.forEach(card => {
+                    if (starredIds.has(card.id)) {
+                        starredCards.push(card);
+                    } else {
+                        unstarredInOriginalOrder.push(card);
+                    }
+                });
+
+                reorderedGames.push(...starredCards);
+                reorderedGames.push(...unstarredInOriginalOrder);
+
+                gamesContainer.innerHTML = '';
+                reorderedGames.forEach(card => gamesContainer.appendChild(card));
+            };
+            
+            const renderStarredGames = () => {
+                starredGamesList.innerHTML = '';
+                if (!canUseLocalStorage) {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = 'Enable local storage to see starred games.';
+                    starredGamesList.appendChild(listItem);
+                    return;
+                }
+                if (starredGames.length > 0) {
+                    starredGames.forEach(game => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${game.emoji} ${game.name}`;
+                        listItem.className = 'dashboard-list-item';
+                        listItem.dataset.gameId = game.id;
+                        starredGamesList.appendChild(listItem);
+                    });
+                } else {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = 'No starred games yet.';
+                        starredGamesList.appendChild(listItem);
+                }
+            };
+
+            const renderPlayNextGames = () => {
+                playNextList.innerHTML = '';
+                if (!canUseLocalStorage) {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = 'Enable local storage to see your play next list.';
+                    playNextList.appendChild(listItem);
+                    return;
+                }
+                if (playNextGames.length > 0) {
+                    playNextGames.forEach(game => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${game.emoji} ${game.name}`;
+                        listItem.className = 'dashboard-list-item';
+                        listItem.dataset.gameId = game.id;
+                        playNextList.appendChild(listItem);
+                    });
+                } else {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = 'No games in the play next list.';
+                    playNextList.appendChild(listItem);
+                }
+            };
+
+            const reorderDashboardPanels = (order) => {
+                const panels = {};
+                dashboardPanels.forEach(panel => {
+                    panels[panel.id] = panel;
+                });
+                
+                dashboardGrid.innerHTML = '';
+                order.forEach(id => {
+                    if (panels[id]) {
+                        dashboardGrid.appendChild(panels[id]);
+                    }
+                });
+            };
+            
+            const loadState = () => {
+                if (!canUseLocalStorage) {
+                    colourModeToggle.disabled = true;
+                    return;
+                }
+                colourModeToggle.disabled = false;
+
+                const savedGameOrder = localStorage.getItem('gamesHubOrder');
+                if (savedGameOrder) {
+                    try {
+                        const order = JSON.parse(savedGameOrder);
+                        const cardsInOrder = order.map(id => document.getElementById(id)).filter(Boolean);
+                        
+                        gamesContainer.innerHTML = '';
+                        cardsInOrder.forEach(card => gamesContainer.appendChild(card));
+                    } catch (e) {
+                        console.error('Failed to parse saved game order:', e);
+                        localStorage.removeItem('gamesHubOrder');
+                    }
+                }
+
+                const savedDashboardOrder = localStorage.getItem('gamesHubDashboardOrder');
+                if (savedDashboardOrder) {
+                    try {
+                        const order = JSON.parse(savedDashboardOrder);
+                        reorderDashboardPanels(order);
+                    } catch (e) {
+                        console.error('Failed to parse saved dashboard order:', e);
+                        localStorage.removeItem('gamesHubDashboardOrder');
+                    }
+                }
+                
+                const savedStarred = localStorage.getItem('gamesHubStarred');
+                if (savedStarred) {
+                    try {
+                        starredGames = JSON.parse(savedStarred);
+                        document.querySelectorAll('.star-button').forEach(btn => btn.textContent = '☆');
+                        starredGames.forEach(game => {
+                            const btn = document.querySelector(`.star-button[data-game-id="${game.id}"]`);
+                            if (btn) {
+                                btn.textContent = '⭐';
+                            }
+                        });
+                        renderGameList();
+                    } catch (e) {
+                        console.error('Failed to parse saved starred games:', e);
+                        localStorage.removeItem('gamesHubStarred');
+                    }
+                }
+                
+                const savedPlayNext = localStorage.getItem('gamesHubPlayNext');
+                if (savedPlayNext) {
+                    try {
+                        playNextGames = JSON.parse(savedPlayNext);
+                    } catch (e) {
+                        console.error('Failed to parse saved play next games:', e);
+                        localStorage.removeItem('gamesHubPlayNext');
+                    }
+                }
+
+                const savedNotes = localStorage.getItem('gamesHubNotes');
+                if (savedNotes) {
+                    notesTextarea.value = savedNotes;
+                    autoResizeTextarea();
+                }
+                
+                const savedGamesOpened = localStorage.getItem('gamesHubGamesOpened');
+                if (savedGamesOpened) {
+                    gamesOpenedCount = parseInt(savedGamesOpened);
+                } else {
+                    gamesOpenedCount = 0;
+                }
+
+                const savedHubOpened = localStorage.getItem('gamesHubHubOpened');
+                hubOpenedCount = savedHubOpened ? parseInt(savedHubOpened) : 0;
+
+                const savedFirstPlayDate = localStorage.getItem('gamesHubFirstPlayDate');
+                const savedResetDate = localStorage.getItem('gamesHubResetDate');
+                const now = new Date();
+                
+                if (!savedFirstPlayDate) {
+                    firstPlayDate = now;
+                    resetDate = new Date(now.getTime() + RESET_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+                } else {
+                    firstPlayDate = new Date(savedFirstPlayDate);
+                    resetDate = new Date(savedResetDate);
+                }
+
+                if (now > resetDate) {
+                    notesTextarea.value = '';
+                    gamesOpenedCount = 0;
+                    hubOpenedCount = 0;
+                    localStorage.removeItem('gamesHubNotes');
+                    localStorage.removeItem('gamesHubGamesOpened');
+                    localStorage.removeItem('gamesHubHubOpened');
+                    firstPlayDate = now;
+                    resetDate = new Date(now.getTime() + RESET_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+                    localStorage.setItem('gamesHubFirstPlayDate', firstPlayDate.toISOString());
+                    localStorage.setItem('gamesHubResetDate', resetDate.toISOString());
+                }
+
+                const colourModeEnabled = localStorage.getItem('gamesHubColourModeEnabled') === 'true';
+                colourModeToggle.checked = colourModeEnabled;
+                if (colourModeEnabled) {
+                    body.classList.add('colourful-mode');
+                } else {
+                    body.classList.remove('colourful-mode');
+                }
+
+                renderStarredGames();
+                renderPlayNextGames();
+                updateUsageDisplay();
+                applyLockdown();
+            };
+
+            const updatePermissionState = () => {
+                const permission = localStorage.getItem('gamesHubPermission');
+                permissionStatusSpan.textContent = `Now: ${permission === 'true' ? 'Yes' : 'No'}`;
+                
+                const disableFeatures = () => {
+                    notesTextarea.placeholder = 'Enable local storage to write notes...';
+                    notesTextarea.disabled = true;
+                    customizeDashboardBtn.disabled = true;
+                    document.getElementById('colour-mode-section').classList.add('opacity-50');
+                    colourModeToggle.disabled = true;
+                    colourModeToggle.checked = false;
+                    body.classList.remove('colourful-mode');
+                };
+
+                const enableFeatures = () => {
+                    notesTextarea.placeholder = '';
+                    notesTextarea.disabled = false;
+                    customizeDashboardBtn.disabled = false;
+                    document.getElementById('colour-mode-section').classList.remove('opacity-50');
+                    colourModeToggle.disabled = false;
+                }
+
+                if (permission === 'true') {
+                    changeMindSection.classList.add('hidden');
+                    deleteProgressSection.classList.remove('hidden');
+                    canUseLocalStorage = true;
+                    enableFeatures();
+                    loadState();
+                } else if (permission === 'false') {
+                    changeMindSection.classList.remove('hidden');
+                    deleteProgressSection.classList.add('hidden');
+                    canUseLocalStorage = false;
+                    starredGames = [];
+                    playNextGames = [];
+                    gamesOpenedCount = 0;
+                    hubOpenedCount = 0;
+                    disableFeatures();
+                    renderStarredGames();
+                    renderPlayNextGames();
+                } else {
+                    changeMindSection.classList.add('hidden');
+                    deleteProgressSection.classList.add('hidden');
+                    canUseLocalStorage = false;
+                    starredGames = [];
+                    playNextGames = [];
+                    gamesOpenedCount = 0;
+                    hubOpenedCount = 0;
+                    disableFeatures();
+                }
+                updateUsageDisplay();
+            };
+            
+            const progressDeletedMessage = localStorage.getItem('progressDeletedMessage');
+            if (progressDeletedMessage) {
+                showMessageModal('Progress Deleted', progressDeletedMessage);
+                localStorage.removeItem('progressDeletedMessage');
+            }
+
+            const hasPermission = localStorage.getItem('gamesHubPermission');
+            if (hasPermission === 'true') {
+                canUseLocalStorage = true;
+                updatePermissionState();
+            } else if (hasPermission === 'false') {
+                canUseLocalStorage = false;
+                updatePermissionState();
+            } else {
+                permissionModal.classList.remove('hidden');
+            }
+
+            if (canUseLocalStorage) {
+                const savedHubOpened = localStorage.getItem('gamesHubHubOpened');
+                hubOpenedCount = savedHubOpened ? parseInt(savedHubOpened) : 0;
+                hubOpenedCount++;
+                saveState();
+            }
+
+            permissionYesBtn.addEventListener('click', () => {
+                localStorage.setItem('gamesHubPermission', 'true');
+                permissionModal.classList.add('hidden');
+                updatePermissionState();
+                if (hubOpenedCount === 0) {
+                    hubOpenedCount = 1;
+                    saveState();
+                }
+                updateUsageDisplay();
+                applyLockdown();
+            });
+
+            permissionNoBtn.addEventListener('click', () => {
+                localStorage.setItem('gamesHubPermission', 'false');
+                permissionModal.classList.add('hidden');
+                updatePermissionState();
+                applyLockdown();
+            });
+
+            messageModalCloseBtn.addEventListener('click', () => {
+                messageModal.classList.add('hidden');
+            });
+
+            starButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                        showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                        return;
+                    }
+                    const gameId = button.dataset.gameId;
+                    const gameEmoji = button.dataset.gameEmoji;
+                    const gameName = button.dataset.gameName;
+                    
+                    const isStarred = starredGames.some(game => game.id === gameId);
+                    
+                    if (isStarred) {
+                        button.textContent = '☆';
+                        starredGames = starredGames.filter(game => game.id !== gameId);
+                    } else {
+                        button.textContent = '⭐';
+                        const newGame = { id: gameId, emoji: gameEmoji, name: gameName };
+                        starredGames.push(newGame);
+                    }
+                    
+                    renderGameList();
+                    renderStarredGames();
+                    saveState();
+                });
+            });
+
+            playNextButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                        showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                        return;
+                    }
+                    const gameId = button.dataset.gameId;
+                    const gameEmoji = button.dataset.gameEmoji;
+                    const gameName = button.dataset.gameName;
+
+                    const newGame = { id: gameId, emoji: gameEmoji, name: gameName };
+                    playNextGames.push(newGame);
+
+                    renderPlayNextGames();
+                    saveState();
+                });
+            });
+            
+            starredGamesList.addEventListener('click', (event) => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                const clickedItem = event.target.closest('li');
+                if (clickedItem && clickedItem.dataset.gameId) {
+                    const gameId = clickedItem.dataset.gameId;
+                    
+                    const starButton = document.querySelector(`.star-button[data-game-id="${gameId}"]`);
+                    if (starButton) {
+                        starButton.textContent = '☆';
+                    }
+                    
+                    starredGames = starredGames.filter(game => game.id !== gameId);
+                    
+                    renderGameList();
+                    renderStarredGames();
+                    saveState();
+                }
+            });
+
+            playNextList.addEventListener('click', (event) => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                const clickedItem = event.target.closest('li');
+                if (clickedItem && clickedItem.dataset.gameId) {
+                    const gameId = clickedItem.dataset.gameId;
+                    
+                    const indexToRemove = playNextGames.findIndex(game => game.id === gameId);
+                    if (indexToRemove !== -1) {
+                        playNextGames.splice(indexToRemove, 1);
+                    }
+                    
+                    renderPlayNextGames();
+                    saveState();
+                }
+            });
+
+            playNowButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                        showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                        e.preventDefault();
+                        return;
+                    }
+                    if (canUseLocalStorage && gamesOpenedCount >= GAMES_OPEN_LIMIT) {
+                        showMessageModal('Monthly Limit Reached', `You have reached your monthly limit of ${GAMES_OPEN_LIMIT} game opens. Please try again next month or avoid closing your current game tabs.`);
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    if (canUseLocalStorage) {
+                        gamesOpenedCount++;
+                        updateUsageDisplay();
+                        saveState();
+                    }
+                });
+            });
+
+            opinionLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                        showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                        e.preventDefault();
+                        return;
+                    }
+                });
+            });
+
+
+            notesTextarea.addEventListener('input', () => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    notesTextarea.value = '';
+                    return;
+                }
+                
+                const text = notesTextarea.value.toLowerCase();
+                
+                const hasForbiddenWord = FORBIDDEN_WORDS.some(word => 
+                    new RegExp(`\\b${word}\\b`).test(text)
+                );
+
+                if (hasForbiddenWord) {
+                    deleteProgressPermanently('Your progress was deleted because you violated the "My Notes" rule by using inappropriate language.');
+                    return;
+                }
+
+                const currentLength = notesTextarea.value.length;
+                if (currentLength > NOTES_CHAR_LIMIT) {
+                    notesTextarea.value = notesTextarea.value.substring(0, NOTES_CHAR_LIMIT);
+                    showMessageModal('Character Limit Reached', `You have reached the maximum of ${NOTES_CHAR_LIMIT} characters for notes.`);
+                }
+                updateUsageDisplay();
+                saveState();
+                autoResizeTextarea();
+            });
+
+            globalSettingsBtn.addEventListener('click', () => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                settingsSidebar.classList.add('open');
+            });
+            
+            closeSettingsBtn.addEventListener('click', () => {
+                settingsSidebar.classList.remove('open');
+            });
+
+            changeMindBtn.addEventListener('click', () => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                const currentPermission = localStorage.getItem('gamesHubPermission');
+                const newPermission = currentPermission === 'true' ? 'false' : 'true';
+                localStorage.setItem('gamesHubPermission', newPermission);
+                window.location.reload();
+            });
+
+            deleteProgressBtn.addEventListener('click', () => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                settingsSidebar.classList.remove('open');
+
+                confirmationContent.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-4">Confirm Deletion</h3>
+                    <p class="mb-4 text-gray-300">To proceed, please type "Delete My Progress" in the box below.</p>
+                    <input type="text" id="delete-confirmation-input" class="w-full p-2 rounded-lg bg-gray-900 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <div class="flex justify-center gap-4">
+                        <button id="delete-confirm-step1" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Confirm</button>
+                        <button id="delete-cancel" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Cancel</button>
+                    </div>
+                `;
+                confirmationModal.classList.remove('hidden');
+
+                document.getElementById('delete-cancel').addEventListener('click', () => {
+                    confirmationModal.classList.add('hidden');
+                });
+                
+                document.getElementById('delete-confirm-step1').addEventListener('click', () => {
+                    const input = document.getElementById('delete-confirmation-input').value;
+                    if (input === 'Delete My Progress') {
+                        confirmationContent.innerHTML = `
+                            <h3 class="text-2xl font-bold mb-4">Are you absolutely sure?</h3>
+                            <p class="mb-6 text-gray-300">This action cannot be undone. All your saved data will be lost forever.</p>
+                            <div class="flex justify-center gap-4">
+                                <button id="delete-confirm-step2" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">Yes, delete everything</button>
+                                <button id="delete-cancel-step2" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">No, cancel</button>
+                            </div>
+                        `;
+                        document.getElementById('delete-cancel-step2').addEventListener('click', () => {
+                            confirmationModal.classList.add('hidden');
+                        });
+                        document.getElementById('delete-confirm-step2').addEventListener('click', () => {
+                            deleteProgressPermanently('Your progress has been manually deleted.');
+                        });
+                    } else {
+                        confirmationModal.classList.add('hidden');
+                        showMessageModal('Incorrect Text', 'The text you entered did not match. Deletion cancelled.');
+                    }
+                });
+            });
+
+            colourModeToggle.addEventListener('change', () => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    colourModeToggle.checked = false;
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                if (colourModeToggle.checked) {
+                    body.classList.add('colourful-mode');
+                } else {
+                    body.classList.remove('colourful-mode');
+                }
+                saveState();
+            });
+
+            customizeDashboardBtn.addEventListener('click', () => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                isCustomizing = true;
+                customizeDashboardBtn.classList.add('hidden');
+                endCustomizingBtn.classList.remove('hidden');
+                dashboardPanels.forEach(panel => {
+                    panel.classList.add('customizing');
+                    panel.setAttribute('draggable', 'true');
+                });
+                showMessageModal('Customise Dashboard', 'Drag and drop the panels to reorder them, then click "End Customising" when you are finished.');
+            });
+
+            endCustomizingBtn.addEventListener('click', () => {
+                if (!canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                    showMessageModal('Hub Locked', `The Games Hub is currently locked. Limit of ${HUB_OPEN_LIMIT} opens per month reached.`);
+                    return;
+                }
+                isCustomizing = false;
+                customizeDashboardBtn.classList.remove('hidden');
+                endCustomizingBtn.classList.add('hidden');
+                dashboardPanels.forEach(panel => {
+                    panel.classList.remove('customizing');
+                    panel.removeAttribute('draggable');
+                });
+                saveState();
+                showMessageModal('Dashboard Saved', 'Your new dashboard layout has been saved.');
+            });
+
+            dashboardPanels.forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    if (!isCustomizing || !canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                        e.preventDefault();
+                        return;
+                    }
+                    draggedItem = e.target;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', e.target.id);
+                    setTimeout(() => {
+                        e.target.classList.add('dragging');
+                    }, 0);
+                });
+
+                item.addEventListener('dragend', () => {
+                    if (!isCustomizing) return;
+                    if (draggedItem) {
+                        draggedItem.classList.remove('dragging');
+                    }
+                    dashboardPanels.forEach(panel => panel.classList.remove('drag-over'));
+                    draggedItem = null;
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    if (!isCustomizing || !canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                        e.preventDefault();
+                        return;
+                    }
+                    if (e.target.closest('.dashboard-panel-item') && e.target.closest('.dashboard-panel-item') !== draggedItem) {
+                        e.target.closest('.dashboard-panel-item').classList.add('drag-over');
+                    }
+                });
+
+                item.addEventListener('dragleave', (e) => {
+                    if (!isCustomizing) return;
+                    if (e.target.closest('.dashboard-panel-item')) {
+                        e.target.closest('.dashboard-panel-item').classList.remove('drag-over');
+                    }
+                });
+
+                item.addEventListener('drop', (e) => {
+                    if (!isCustomizing || !canUseLocalStorage || hubOpenedCount > HUB_OPEN_LIMIT) {
+                        e.preventDefault();
+                        return;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const targetItem = e.target.closest('.dashboard-panel-item');
+
+                    if (targetItem && targetItem !== draggedItem) {
+                        const parent = dashboardGrid;
+                        
+                        const draggedNextSibling = draggedItem.nextElementSibling;
+                        const targetNextSibling = targetItem.nextElementSibling;
+
+                        if (draggedNextSibling === targetItem) {
+                            parent.insertBefore(draggedItem, targetNextSibling);
+                        } else if (targetNextSibling === draggedItem) {
+                            parent.insertBefore(targetItem, draggedNextSibling);
+                        } else {
+                            const tempPlaceholder = document.createElement('div');
+                            parent.insertBefore(tempPlaceholder, draggedItem);
+                            parent.insertBefore(draggedItem, targetNextSibling);
+                            parent.insertBefore(targetItem, tempPlaceholder);
+                            parent.removeChild(tempPlaceholder);
+                        }
+                        
+                        saveState();
+                    }
+
+                    if (targetItem) {
+                        targetItem.classList.remove('drag-over');
+                    }
+                });
+            });
+
+            autoResizeTextarea();
+            updatePermissionState();
+            setInterval(updateCountdown, 1000);
+        });
+    </script>
+</body>
+</html>
